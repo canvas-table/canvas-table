@@ -256,8 +256,8 @@ class HTMLCanvasTableElement extends HTMLElement{
 				Object.assign(pddv15sppk.rect, {
 					x: dx,
 					y: dy,
-					width: canvas.clientWidth - dx - dhw,
-					height: canvas.clientHeight - dy - dvw
+					width: canvas.clientWidth - dx - dvw,
+					height: canvas.clientHeight - dy - dhw
 				});
 				return this.ctx;
 			}
