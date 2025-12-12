@@ -14,24 +14,33 @@
  * limitations under the License.
  */
 class CanvasTableMouseEvent extends MouseEvent{
-	constructor(type, options, cell){
+	constructor(type, options, cell, element){
 		super(type, options);
 		this.addr = cell.addr;
 		this.rect = cell.rect;
+		this.element = element;
 	}
 }
 
 class CanvasTableAttacheEvent extends Event{
-	constructor(type, target){
+	constructor(type, element){
 		super(type);
-		this.element = target;
+		this.element = element;
+	}
+}
+
+class CanvasTableRenderEvent extends Event{
+	constructor(type, options, element){
+		super(type, options);
+		this.element = element;
 	}
 }
 
 class CanvasTableScrollEvent extends Event{
-	constructor(type, options, trigger){
+	constructor(type, options, trigger, element){
 		super(type, options);
 		this.trigger = trigger;
+		this.element = element;
 	}
 }
 
@@ -307,9 +316,9 @@ class HTMLCanvasTableElement extends HTMLElement{
 						if(this.contains(rects.scrollbarBackwardButton, point)){
 							const offsetValue = Math.max(0, table.offsetX - 1);
 							if(offsetValue != table.offsetX){
-								if(table.dispatchEvent(new CanvasTableScrollEvent("table-beforescroll", {cancelable: true}, "scrollbarBackwardButton"))){
+								if(table.dispatchEvent(new CanvasTableScrollEvent("table-beforescroll", {cancelable: true}, "scrollbarBackwardButton", this.element))){
 									table.offsetX = offsetValue;
-									table.dispatchEvent(new CanvasTableScrollEvent("table-scroll", {}, "scrollbarBackwardButton"));
+									table.dispatchEvent(new CanvasTableScrollEvent("table-scroll", {}, "scrollbarBackwardButton", this.element));
 									this.element.rerender();
 								}
 							}
@@ -318,9 +327,9 @@ class HTMLCanvasTableElement extends HTMLElement{
 						if(this.contains(rects.scrollbarForwardButton, point)){
 							const offsetValue = Math.min(table.columnSize - 1, table.offsetX + 1);
 							if(offsetValue != table.offsetX){
-								if(table.dispatchEvent(new CanvasTableScrollEvent("table-beforescroll", {cancelable: true}, "scrollbarForwardButton"))){
+								if(table.dispatchEvent(new CanvasTableScrollEvent("table-beforescroll", {cancelable: true}, "scrollbarForwardButton", this.element))){
 									table.offsetX = offsetValue;
-									table.dispatchEvent(new CanvasTableScrollEvent("table-scroll", {}, "scrollbarForwardButton"));
+									table.dispatchEvent(new CanvasTableScrollEvent("table-scroll", {}, "scrollbarForwardButton", this.element));
 									this.element.rerender();
 								}
 							}
@@ -329,9 +338,9 @@ class HTMLCanvasTableElement extends HTMLElement{
 						if(this.contains(rects.scrollbarUpButton, point)){
 							const offsetValue = Math.max(0, table.offsetY - 1);
 							if(offsetValue != table.offsetY){
-								if(table.dispatchEvent(new CanvasTableScrollEvent("table-beforescroll", {cancelable: true}, "scrollbarUpButton"))){
+								if(table.dispatchEvent(new CanvasTableScrollEvent("table-beforescroll", {cancelable: true}, "scrollbarUpButton", this.element))){
 									table.offsetY = offsetValue;
-									table.dispatchEvent(new CanvasTableScrollEvent("table-scroll", {}, "scrollbarUpButton"));
+									table.dispatchEvent(new CanvasTableScrollEvent("table-scroll", {}, "scrollbarUpButton", this.element));
 									this.element.rerender();
 								}
 							}
@@ -340,9 +349,9 @@ class HTMLCanvasTableElement extends HTMLElement{
 						if(this.contains(rects.scrollbarDownButton, point)){
 							const offsetValue = Math.min(table.rowSize - 1, table.offsetY + 1);
 							if(offsetValue != table.offsetY){
-								if(table.dispatchEvent(new CanvasTableScrollEvent("table-beforescroll", {cancelable: true}, "scrollbarDownButton"))){
+								if(table.dispatchEvent(new CanvasTableScrollEvent("table-beforescroll", {cancelable: true}, "scrollbarDownButton", this.element))){
 									table.offsetY = offsetValue;
-									table.dispatchEvent(new CanvasTableScrollEvent("table-scroll", {}, "scrollbarDownButton"));
+									table.dispatchEvent(new CanvasTableScrollEvent("table-scroll", {}, "scrollbarDownButton", this.element));
 									this.element.rerender();
 								}
 							}
@@ -354,9 +363,9 @@ class HTMLCanvasTableElement extends HTMLElement{
 							const pos = (point.x - table.scrollbarWidth) / trackWidth;
 							const offsetValue = Math.floor(pos * table.columnSize);
 							if(offsetValue != table.offsetX){
-								if(table.dispatchEvent(new CanvasTableScrollEvent("table-beforescroll", {cancelable: true}, "scrollbarHorizontalTrack"))){
+								if(table.dispatchEvent(new CanvasTableScrollEvent("table-beforescroll", {cancelable: true}, "scrollbarHorizontalTrack", this.element))){
 									table.offsetX = offsetValue;
-									table.dispatchEvent(new CanvasTableScrollEvent("table-scroll", {}, "scrollbarHorizontalTrack"));
+									table.dispatchEvent(new CanvasTableScrollEvent("table-scroll", {}, "scrollbarHorizontalTrack", this.element));
 									this.element.rerender();
 								}
 							}
@@ -368,9 +377,9 @@ class HTMLCanvasTableElement extends HTMLElement{
 							const pos = (point.y - table.scrollbarWidth) / trackHeight;
 							const offsetValue = Math.floor(pos * table.rowSize);
 							if(offsetValue != table.offsetY){
-								if(table.dispatchEvent(new CanvasTableScrollEvent("table-beforescroll", {cancelable: true}, "scrollbarVerticalTrack"))){
+								if(table.dispatchEvent(new CanvasTableScrollEvent("table-beforescroll", {cancelable: true}, "scrollbarVerticalTrack", this.element))){
 									table.offsetY = offsetValue;
-									table.dispatchEvent(new CanvasTableScrollEvent("table-scroll", {}, "scrollbarVerticalTrack"));
+									table.dispatchEvent(new CanvasTableScrollEvent("table-scroll", {}, "scrollbarVerticalTrack", this.element));
 									this.element.rerender();
 								}
 							}
@@ -384,9 +393,9 @@ class HTMLCanvasTableElement extends HTMLElement{
 							const pos = (this.dragStart.offset * trackWidth / (table.columnSize - table.virtual.columns.length + 1) + delta) / (trackWidth / table.columnSize);
 							const offsetValue = Math.max(0, Math.min(table.columnSize - table.virtual.columns.length + 1, Math.floor(pos)));
 							if(offsetValue != table.offsetX){
-								if(table.dispatchEvent(new CanvasTableScrollEvent("table-beforescroll", {cancelable: true}, "scrollbarHorizontalThumb"))){
+								if(table.dispatchEvent(new CanvasTableScrollEvent("table-beforescroll", {cancelable: true}, "scrollbarHorizontalThumb", this.element))){
 									table.offsetX = offsetValue;
-									table.dispatchEvent(new CanvasTableScrollEvent("table-scroll", {}, "scrollbarHorizontalThumb"));
+									table.dispatchEvent(new CanvasTableScrollEvent("table-scroll", {}, "scrollbarHorizontalThumb", this.element));
 									this.element.rerender();
 								}
 							}
@@ -399,9 +408,9 @@ class HTMLCanvasTableElement extends HTMLElement{
 							const pos = (this.dragStart.offset * trackHeight / (table.rowSize - table.virtual.rows.length + 1) + delta) / (trackHeight / table.rowSize);
 							const offsetValue = Math.max(0, Math.min(table.rowSize - table.virtual.rows.length + 1, Math.floor(pos)));
 							if(offsetValue != table.offsetY){
-								if(table.dispatchEvent(new CanvasTableScrollEvent("table-beforescroll", {cancelable: true}, "scrollbarVerticalThumb"))){
+								if(table.dispatchEvent(new CanvasTableScrollEvent("table-beforescroll", {cancelable: true}, "scrollbarVerticalThumb", this.element))){
 									table.offsetY = offsetValue;
-									table.dispatchEvent(new CanvasTableScrollEvent("table-scroll", {}, "scrollbarVerticalThumb"));
+									table.dispatchEvent(new CanvasTableScrollEvent("table-scroll", {}, "scrollbarVerticalThumb", this.element));
 									this.element.rerender();
 								}
 							}
@@ -416,9 +425,9 @@ class HTMLCanvasTableElement extends HTMLElement{
 							const delta = Math.sign(e.deltaY);
 							const offsetValue = Math.max(0, Math.min(table.columnSize - table.virtual.columns.length + 1, table.offsetX + delta, table.columnSize - 1));
 							if(offsetValue != table.offsetX){
-								if(table.dispatchEvent(new CanvasTableScrollEvent("table-beforescroll", {cancelable: true}, "wheelHorizontal"))){
+								if(table.dispatchEvent(new CanvasTableScrollEvent("table-beforescroll", {cancelable: true}, "wheelHorizontal", this.element))){
 									table.offsetX = offsetValue;
-									table.dispatchEvent(new CanvasTableScrollEvent("table-scroll", {}, "wheelHorizontal"));
+									table.dispatchEvent(new CanvasTableScrollEvent("table-scroll", {}, "wheelHorizontal", this.element));
 									this.element.rerender();
 								}
 							}
@@ -426,9 +435,9 @@ class HTMLCanvasTableElement extends HTMLElement{
 							const delta = Math.sign(e.deltaY);
 							const offsetValue = Math.max(0, Math.min(table.rowSize - table.virtual.rows.length + 1, table.offsetY + delta, table.rowSize - 1));
 							if(offsetValue != table.offsetY){
-								if(table.dispatchEvent(new CanvasTableScrollEvent("table-beforescroll", {cancelable: true}, "wheelVertical"))){
+								if(table.dispatchEvent(new CanvasTableScrollEvent("table-beforescroll", {cancelable: true}, "wheelVertical", this.element))){
 									table.offsetY = offsetValue;
-									table.dispatchEvent(new CanvasTableScrollEvent("table-scroll", {}, "wheelVertical"));
+									table.dispatchEvent(new CanvasTableScrollEvent("table-scroll", {}, "wheelVertical", this.element));
 									this.element.rerender();
 								}
 							}
@@ -477,7 +486,7 @@ class HTMLCanvasTableElement extends HTMLElement{
 			},
 			eventInit(type, ev, cell){
 				if(ev instanceof MouseEvent){
-					return new CanvasTableMouseEvent(type, ev, cell);
+					return new CanvasTableMouseEvent(type, ev, cell, this.element);
 				}
 				return new ev.constructor(type, ev);
 			},
@@ -521,8 +530,9 @@ class HTMLCanvasTableElement extends HTMLElement{
 		this.rerender(this.pdep6ph1vp.size);
 	}
 	rerender(size = null){
-		if(this.pdep6ph1vp.shadow != null){
+		if((this.pdep6ph1vp.shadow != null) && this.pddv15sppk.table.dispatchEvent(new CanvasTableRenderEvent("table-beforerender", {cancelable: true}, this))){
 			this.draw(this.pdep6ph1vp.getContext(size));
+			this.pddv15sppk.table.dispatchEvent(new CanvasTableRenderEvent("table-render", {}, this));
 		}
 	}
 	draw(ctx){
