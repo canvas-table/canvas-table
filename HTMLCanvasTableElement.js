@@ -83,6 +83,9 @@ class CanvasTableModel extends EventTarget{
 		return 30;
 	}
 	drawData(renderer, rowNo, columnNo){
+		if((this.columnSize == 0) && (this.rowSize == 0)){
+			return;
+		}
 		renderer.border("rgba(0,0,0,0.15)", 1);
 		if(rowNo == null){
 			if(columnNo == null){
@@ -124,18 +127,7 @@ class CanvasTableModel extends EventTarget{
 			}).add(data, "black", "16px monospace");
 		}
 	}
-	drawOverlay(object){
-		/*
-		const {ctx, rect} = object;
-		const {columns, rows} = this.virtual;
-		if((columns.length > 0) && (rows.length > 0)){
-			ctx.save();
-			ctx.strokeStyle  = "black";
-			ctx.strokeRect(rect.x, rect.y, columns.at(-1).x + columns.at(-1).width - rect.x, rows.at(-1).y + rows.at(-1).height - rect.y);
-			ctx.restore();
-		}
-		*/
-	}
+	drawOverlay(object){}
 	findCellAtPoint(point){
 		const binarySearch = (array, value, rangeFn) => {
 			let left = 0, right = array.length - 1;
@@ -285,7 +277,7 @@ class HTMLCanvasTableElement extends HTMLElement{
 			this.draw(this.pdep6ph1vp.getContext(e.detail?.size));
 		});
 		if(this.pddv15sppk.table == null){
-			this.pddv15sppk.table = new CanvasTableModel([""], [[null]]);
+			this.pddv15sppk.table = this.constructor.defaultFactory(this);
 		}
 		this.pdep6ph1vp.ctx = canvas.getContext("2d");
 		this.constructor.observer.observe(canvas, {box: "device-pixel-content-box"});
@@ -806,6 +798,9 @@ class HTMLCanvasTableElement extends HTMLElement{
 			}));
 		}
 	});
+	static defaultFactory(element){
+		return new CanvasTableModel([], []);
+	}
 	static styleSheet = new CSSStyleSheet();
 	static dragImage = new Image();
 }
