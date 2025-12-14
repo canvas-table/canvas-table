@@ -216,6 +216,215 @@ class CanvasTableModel extends EventTarget{
 	}
 }
 
+class CanvasTableRenderer{
+	constructor(){
+		Object.assign(this, {
+			background: null,
+			textData: null,
+			wrappers: null,
+			borders: null,
+			rect: null
+		});
+	}
+	init(rect){
+		Object.assign(this, {
+			background: null,
+			textData: [],
+			wrappers: [],
+			borders: {},
+			rect: rect
+		});
+		return this;
+	}
+	addText(options){
+		const obj = {
+			options: options,
+			add(text, color, font){
+				this.values.push({text, color, font});
+				return this;
+			},
+			values: []
+		};
+		this.textData.push(obj);
+		return obj;
+	}
+	wrap(...wrappers){
+		this.wrappers.push(...wrappers);
+	}
+	border(color, width){
+		this.borders.left = {color, width};
+		this.borders.right = {color, width};
+		this.borders.top = {color, width};
+		this.borders.bottom = {color, width};
+	}
+	borderLeft(color, width){
+		this.borders.left = {color, width};
+	}
+	borderRight(color, width){
+		this.borders.right = {color, width};
+	}
+	borderTop(color, width){
+		this.borders.top = {color, width};
+	}
+	borderBottom(color, width){
+		this.borders.bottom = {color, width};
+	}
+	borderUp(color, width){
+		this.borders.up = {color, width};
+	}
+	borderDown(color, width){
+		this.borders.down = {color, width};
+	}
+	render(object){
+		const {ctx, table} = object;
+		const {rect, background, textData, wrappers, borders} = this;
+		const {measureMultilineText, renderMultilineText} = this.constructor;
+		ctx.save();
+		ctx.beginPath();
+		ctx.rect(rect.x, rect.y, rect.width, rect.height);
+		ctx.clip();
+		if(background != null){
+			ctx.fillStyle = background;
+			ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
+		}
+		for(let textDataObject of textData){
+			Object.assign(ctx, {
+				textAlign: textDataObject.options?.textAlign ?? "left",
+				textBaseline:  textDataObject.options?.textBaseline ?? "top"
+			});
+			let renderTextData = null;
+			for(let args of textDataObject.values){
+				const {text, color, font} = args;
+				renderTextData = measureMultilineText(ctx, text, color, font, renderTextData);
+			}
+			renderMultilineText(ctx, renderTextData, rect, textDataObject.options);
+		}
+		for(let wrapper of wrappers){
+			wrapper.call(table, object);
+		}
+		if((borders.left?.color != null) && (borders.left?.width != null)){
+			ctx.lineWidth = borders.left.width;
+			ctx.strokeStyle = borders.left.color;
+			ctx.moveTo(rect.left, rect.top);
+			ctx.lineTo(rect.left, rect.bottom);
+			ctx.stroke();
+		}
+		if((borders.right?.color != null) && (borders.right?.width != null)){
+			ctx.lineWidth = borders.right.width;
+			ctx.strokeStyle = borders.right.color;
+			ctx.moveTo(rect.right, rect.top);
+			ctx.lineTo(rect.right, rect.bottom);
+			ctx.stroke();
+		}
+		if((borders.top?.color != null) && (borders.top?.width != null)){
+			ctx.lineWidth = borders.top.width;
+			ctx.strokeStyle = borders.top.color;
+			ctx.moveTo(rect.left, rect.top);
+			ctx.lineTo(rect.right, rect.top);
+			ctx.stroke();
+		}
+		if((borders.bottom?.color != null) && (borders.bottom?.width != null)){
+			ctx.lineWidth = borders.bottom.width;
+			ctx.strokeStyle = borders.bottom.color;
+			ctx.moveTo(rect.left, rect.bottom);
+			ctx.lineTo(rect.right, rect.bottom);
+			ctx.stroke();
+		}
+		if((borders.up?.color != null) && (borders.up?.width != null)){
+			ctx.lineWidth = borders.up.width;
+			ctx.strokeStyle = borders.up.color;
+			ctx.moveTo(rect.left, rect.bottom);
+			ctx.lineTo(rect.right, rect.top);
+			ctx.stroke();
+		}
+		if((borders.down?.color != null) && (borders.down?.width != null)){
+			ctx.lineWidth = borders.down.width;
+			ctx.strokeStyle = borders.down.color;
+			ctx.moveTo(rect.left, rect.top);
+			ctx.lineTo(rect.right, rect.bottom);
+			ctx.stroke();
+		}
+		ctx.restore();
+	}
+	static measureMultilineText(ctx, text, color, font, textData = null){
+		ctx.save();
+		ctx.font = font;
+		const res =  (text ?? "").toString().split(/\r\n?|\n/).reduce((acc, line) => {
+			const metrics = ctx.measureText(line);
+			const lineHeight = metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent;
+			acc.lines.push({
+				text: line,
+				width: metrics.width,
+				height: lineHeight,
+				color: color,
+				font: font
+			});
+			acc.height += lineHeight;
+			acc.width = Math.max(acc.width, metrics.width);
+			return acc;
+		}, textData ?? {lines: [], width: 0, height: 0});
+		ctx.restore();
+		return res;
+	}
+	static renderMultilineText(ctx, textData, rect, options = null){
+		const {width, height} = rect;
+		const padding = options?.padding ?? 0;
+		const lines = textData.lines;
+		const totalTextHeight = textData.height;
+		const maxWidth = textData.width;
+		const fitWidth = width - 2 * padding;
+		const fitHeight = height - 2 * padding;
+		const scale = (options?.shrinkToFit ?? false) ? Math.min(1, fitWidth / maxWidth, fitHeight / totalTextHeight) : 1;
+		const scaledMaxWidth = maxWidth * scale;
+		const scaledTotalHeight = totalTextHeight * scale;
+		const originalAlign = ctx.textAlign;
+		const originalBaseline = ctx.textBaseline;
+		let boxLeft = padding;
+		let boxTop = padding;
+		let y = 0;
+		ctx.save();
+		switch(originalAlign){
+			case 'center':
+				boxLeft = padding + (fitWidth - scaledMaxWidth) / 2;
+				break;
+			case 'right':
+			case 'end':
+				boxLeft = padding + fitWidth - scaledMaxWidth;
+				break;
+		}
+		switch(originalBaseline){
+			case 'middle':
+				boxTop = padding + (fitHeight - scaledTotalHeight) / 2;
+				break;
+			case 'bottom':
+				boxTop = padding + fitHeight - scaledTotalHeight;
+				break;
+		}
+		ctx.textAlign = 'left';
+		ctx.textBaseline = 'top';
+		ctx.translate(rect.x, rect.y);
+		ctx.transform(scale, 0, 0, scale, boxLeft, boxTop);
+		for(let line of lines){
+			let lineX = 0;
+			const lineWidth = line.width;
+			switch(originalAlign){
+				case 'center':
+					lineX = (maxWidth - lineWidth) / 2;
+					break;
+				case 'right':
+				case 'end':
+					lineX = maxWidth - lineWidth;
+					break;
+			}
+			ctx.font = line.font;
+			ctx.fillStyle = line.color;
+			ctx.fillText(line.text, lineX, y);
+			y += line.height;
+		}
+		ctx.restore();
+	}
+}
+
 class HTMLCanvasTableElement extends HTMLElement{
 	constructor(){
 		super();
@@ -226,9 +435,8 @@ class HTMLCanvasTableElement extends HTMLElement{
 			matrix: new DOMMatrix([1, 0, 0, 1, 0, 0]),
 			rect: new DOMRect(0, 0, 0, 0),
 			cursor: new DOMRect(0, 0, 0, 0),
-			table: null,
-			measureMultilineText: this.constructor.measureMultilineText,
-			renderMultilineText: this.constructor.renderMultilineText
+			renderer: new CanvasTableRenderer(),
+			table: null
 		};
 		this.pdep6ph1vp = {
 			element: this,
@@ -591,197 +799,9 @@ class HTMLCanvasTableElement extends HTMLElement{
 		ctx.restore();
 	}
 	drawCell(rowNo, columnNo){
-		const {ctx, cursor, table} = this.pddv15sppk;
-		const renderer = {
-			background: null,
-			addText(options){
-				const obj = {
-					options: options,
-					add(text, color, font){
-						this.values.push({text, color, font});
-						return this;
-					},
-					values: []
-				};
-				this.textData.push(obj);
-				return obj;
-			},
-			wrap(...wrappers){
-				this.wrappers.push(...wrappers);
-			},
-			border(color, width){
-				this.borders.left = {color, width};
-				this.borders.right = {color, width};
-				this.borders.top = {color, width};
-				this.borders.bottom = {color, width};
-			},
-			borderLeft(color, width){
-				this.borders.left = {color, width};
-			},
-			borderRight(color, width){
-				this.borders.right = {color, width};
-			},
-			borderTop(color, width){
-				this.borders.top = {color, width};
-			},
-			borderBottom(color, width){
-				this.borders.bottom = {color, width};
-			},
-			borderUp(color, width){
-				this.borders.up = {color, width};
-			},
-			borderDown(color, width){
-				this.borders.down = {color, width};
-			},
-			textData: [],
-			wrappers: [],
-			borders: {}
-		};
-		const data = table.drawData(renderer, rowNo, columnNo);
-		ctx.save();
-		ctx.beginPath();
-		ctx.rect(cursor.x, cursor.y, cursor.width, cursor.height);
-		ctx.clip();
-		if(renderer.background != null){
-			ctx.fillStyle = renderer.background;
-			ctx.fillRect(cursor.x, cursor.y, cursor.width, cursor.height);
-		}
-		for(let textData of renderer.textData){
-			Object.assign(ctx, {
-				textAlign: textData.options?.textAlign ?? "left",
-				textBaseline:  textData.options?.textBaseline ?? "top"
-			});
-			let renderTextData = null;
-			for(let args of textData.values){
-				const {text, color, font} = args;
-				renderTextData = this.pddv15sppk.measureMultilineText(text, color, font, renderTextData);
-			}
-			this.pddv15sppk.renderMultilineText(renderTextData, cursor, textData.options);
-		}
-		for(let wrapper of renderer.wrappers){
-			wrapper.call(data, this.pddv15sppk);
-		}
-		if((renderer.borders.left?.color != null) && (renderer.borders.left?.width != null)){
-			ctx.lineWidth = renderer.borders.left.width;
-			ctx.strokeStyle = renderer.borders.left.color;
-			ctx.moveTo(cursor.left, cursor.top);
-			ctx.lineTo(cursor.left, cursor.bottom);
-			ctx.stroke();
-		}
-		if((renderer.borders.right?.color != null) && (renderer.borders.right?.width != null)){
-			ctx.lineWidth = renderer.borders.right.width;
-			ctx.strokeStyle = renderer.borders.right.color;
-			ctx.moveTo(cursor.right, cursor.top);
-			ctx.lineTo(cursor.right, cursor.bottom);
-			ctx.stroke();
-		}
-		if((renderer.borders.top?.color != null) && (renderer.borders.top?.width != null)){
-			ctx.lineWidth = renderer.borders.top.width;
-			ctx.strokeStyle = renderer.borders.top.color;
-			ctx.moveTo(cursor.left, cursor.top);
-			ctx.lineTo(cursor.right, cursor.top);
-			ctx.stroke();
-		}
-		if((renderer.borders.bottom?.color != null) && (renderer.borders.bottom?.width != null)){
-			ctx.lineWidth = renderer.borders.bottom.width;
-			ctx.strokeStyle = renderer.borders.bottom.color;
-			ctx.moveTo(cursor.left, cursor.bottom);
-			ctx.lineTo(cursor.right, cursor.bottom);
-			ctx.stroke();
-		}
-		if((renderer.borders.up?.color != null) && (renderer.borders.up?.width != null)){
-			ctx.lineWidth = renderer.borders.up.width;
-			ctx.strokeStyle = renderer.borders.up.color;
-			ctx.moveTo(cursor.left, cursor.bottom);
-			ctx.lineTo(cursor.right, cursor.top);
-			ctx.stroke();
-		}
-		if((renderer.borders.down?.color != null) && (renderer.borders.down?.width != null)){
-			ctx.lineWidth = renderer.borders.down.width;
-			ctx.strokeStyle = renderer.borders.down.color;
-			ctx.moveTo(cursor.left, cursor.top);
-			ctx.lineTo(cursor.right, cursor.bottom);
-			ctx.stroke();
-		}
-		ctx.restore();
-	}
-	static measureMultilineText(text, color, font, textData = null){
-		this.ctx.save();
-		this.ctx.font = font;
-		const res =  (text ?? "").toString().split(/\r\n?|\n/).reduce((acc, line) => {
-			const metrics = this.ctx.measureText(line);
-			const lineHeight = metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent;
-			acc.lines.push({
-				text: line,
-				width: metrics.width,
-				height: lineHeight,
-				color: color,
-				font: font
-			});
-			acc.height += lineHeight;
-			acc.width = Math.max(acc.width, metrics.width);
-			return acc;
-		}, textData ?? {lines: [], width: 0, height: 0});
-		this.ctx.restore();
-		return res;
-	}
-	static renderMultilineText(textData, rect, options = null){
-		const ctx = this.ctx;
-		const {width, height} = rect;
-		const padding = options?.padding ?? 0;
-		const lines = textData.lines;
-		const totalTextHeight = textData.height;
-		const maxWidth = textData.width;
-		const fitWidth = width - 2 * padding;
-		const fitHeight = height - 2 * padding;
-		const scale = (options?.shrinkToFit ?? false) ? Math.min(1, fitWidth / maxWidth, fitHeight / totalTextHeight) : 1;
-		const scaledMaxWidth = maxWidth * scale;
-		const scaledTotalHeight = totalTextHeight * scale;
-		const originalAlign = ctx.textAlign;
-		const originalBaseline = ctx.textBaseline;
-		let boxLeft = padding;
-		let boxTop = padding;
-		let y = 0;
-		ctx.save();
-		switch(originalAlign){
-			case 'center':
-				boxLeft = padding + (fitWidth - scaledMaxWidth) / 2;
-				break;
-			case 'right':
-			case 'end':
-				boxLeft = padding + fitWidth - scaledMaxWidth;
-				break;
-		}
-		switch(originalBaseline){
-			case 'middle':
-				boxTop = padding + (fitHeight - scaledTotalHeight) / 2;
-				break;
-			case 'bottom':
-				boxTop = padding + fitHeight - scaledTotalHeight;
-				break;
-		}
-		ctx.textAlign = 'left';
-		ctx.textBaseline = 'top';
-		ctx.translate(rect.x, rect.y);
-		ctx.transform(scale, 0, 0, scale, boxLeft, boxTop);
-		for(let line of lines){
-			let lineX = 0;
-			const lineWidth = line.width;
-			switch(originalAlign){
-				case 'center':
-					lineX = (maxWidth - lineWidth) / 2;
-					break;
-				case 'right':
-				case 'end':
-					lineX = maxWidth - lineWidth;
-					break;
-			}
-			ctx.font = line.font;
-			ctx.fillStyle = line.color;
-			ctx.fillText(line.text, lineX, y);
-			y += line.height;
-		}
-		ctx.restore();
+		const {ctx, cursor, renderer, table} = this.pddv15sppk;
+		table.drawData(renderer.init(DOMRect.fromRect(cursor)), rowNo, columnNo);
+		renderer.render(this.pddv15sppk);
 	}
 	static observer = new ResizeObserver(entries => {
 		for(let entry of entries){
