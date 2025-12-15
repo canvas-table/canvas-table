@@ -193,20 +193,30 @@ class CanvasTableModel extends EventTarget{
 			rects.scrollbarHorizontalTrack = new DOMRect(0, rect.bottom, rect.right, scrollbarWidth);
 			if(columnSize > 1){
 				const thumbSize = (rect.right - scrollbarWidth * 2) / columnSize;
-				const thumbOffset = thumbSize * this.offsetX + scrollbarWidth;
 				rects.scrollbarBackwardButton = new DOMRect(0, rect.bottom, scrollbarWidth, scrollbarWidth);
 				rects.scrollbarForwardButton = new DOMRect(rect.right - scrollbarWidth, rect.bottom, scrollbarWidth, scrollbarWidth);
-				rects.scrollbarHorizontalThumb = new DOMRect(thumbOffset, rect.bottom, Math.max(10, thumbSize), scrollbarWidth);
+				if(thumbSize < 10){
+					const thumbOffset = (rect.right - scrollbarWidth * 2 - 10) / columnSize * this.offsetX + scrollbarWidth;
+					rects.scrollbarHorizontalThumb = new DOMRect(thumbOffset, rect.bottom, 10, scrollbarWidth);
+				}else{
+					const thumbOffset = thumbSize * this.offsetX + scrollbarWidth;
+					rects.scrollbarHorizontalThumb = new DOMRect(thumbOffset, rect.bottom, thumbSize, scrollbarWidth);
+				}
 			}
 		}
 		if(this.hasVerticalScrollbar){
 			rects.scrollbarVerticalTrack = new DOMRect(rect.right, 0, scrollbarWidth, rect.bottom);
 			if(rowSize > 1){
 				const thumbSize = (rect.bottom - scrollbarWidth * 2) / rowSize;
-				const thumbOffset = thumbSize * this.offsetY + scrollbarWidth;
 				rects.scrollbarUpButton = new DOMRect(rect.right, 0, scrollbarWidth, scrollbarWidth);
 				rects.scrollbarDownButton = new DOMRect(rect.right, rect.bottom - scrollbarWidth, scrollbarWidth, scrollbarWidth);
-				rects.scrollbarVerticalThumb = new DOMRect(rect.right, thumbOffset, scrollbarWidth, Math.max(10, thumbSize));
+				if(thumbSize < 10){
+					const thumbOffset = (rect.bottom - scrollbarWidth * 2 - 10) / rowSize * this.offsetY + scrollbarWidth;
+					rects.scrollbarVerticalThumb = new DOMRect(rect.right, thumbOffset, scrollbarWidth, 10);
+				}else{
+					const thumbOffset = thumbSize * this.offsetY + scrollbarWidth;
+					rects.scrollbarVerticalThumb = new DOMRect(rect.right, thumbOffset, scrollbarWidth, thumbSize);
+				}
 			}
 		}
 	}
@@ -502,12 +512,10 @@ class HTMLCanvasTableElement extends HTMLElement{
 						e.dataTransfer.effectAllowed = "all";
 						if(this.contains(rects.scrollbarHorizontalThumb, point)){
 							this.dragging = "horizontal";
-							this.dragStart = {x: point.x, offset: table.offsetX};
 							return;
 						}
 						if(this.contains(rects.scrollbarVerticalThumb, point)){
 							this.dragging = "vertical";
-							this.dragStart = {y: point.y, offset: table.offsetY};
 							return;
 						}
 					}else if(e.type == "dragover"){
@@ -558,10 +566,9 @@ class HTMLCanvasTableElement extends HTMLElement{
 							return;
 						}
 						if(this.contains(rects.scrollbarHorizontalTrack, point) && !this.contains(rects.scrollbarHorizontalThumb, point)){
-							// Jump to position in track
 							const trackWidth = rects.scrollbarHorizontalTrack.width - (table.hasVerticalScrollbar ? table.scrollbarWidth : 0) - 2 * table.scrollbarWidth;
 							const pos = (point.x - table.scrollbarWidth) / trackWidth;
-							const offsetValue = Math.floor(pos * table.columnSize);
+							const offsetValue =  Math.max(0, Math.min(table.columnSize - 1, Math.floor(pos * table.columnSize)));
 							if(offsetValue != table.offsetX){
 								if(table.dispatchEvent(new CanvasTableScrollEvent("table-beforescroll", {cancelable: true}, "scrollbarHorizontalTrack", this.element))){
 									table.offsetX = offsetValue;
@@ -572,10 +579,9 @@ class HTMLCanvasTableElement extends HTMLElement{
 							return;
 						}
 						if(this.contains(rects.scrollbarVerticalTrack, point) && !this.contains(rects.scrollbarVerticalThumb, point)){
-							// Jump to position in track
 							const trackHeight = rects.scrollbarVerticalTrack.height - (table.hasHorizontalScrollbar ? table.scrollbarWidth : 0) - 2 * table.scrollbarWidth;
 							const pos = (point.y - table.scrollbarWidth) / trackHeight;
-							const offsetValue = Math.floor(pos * table.rowSize);
+							const offsetValue = Math.max(0, Math.min(table.rowSize - 1, Math.floor(pos * table.rowSize)));
 							if(offsetValue != table.offsetY){
 								if(table.dispatchEvent(new CanvasTableScrollEvent("table-beforescroll", {cancelable: true}, "scrollbarVerticalTrack", this.element))){
 									table.offsetY = offsetValue;
@@ -588,10 +594,8 @@ class HTMLCanvasTableElement extends HTMLElement{
 					}else if((e.type == "drag") && this.dragging && ((e.offsetX) >= 0 || (e.offsetY >= 0))){
 						if(this.dragging == "horizontal"){
 							const trackWidth = rects.scrollbarHorizontalTrack.width - (table.hasVerticalScrollbar ? table.scrollbarWidth : 0) - 2 * table.scrollbarWidth;
-							const thumbSize = rects.scrollbarHorizontalThumb.width;
-							const delta = point.x - this.dragStart.x;
-							const pos = (this.dragStart.offset * trackWidth / (table.columnSize - table.virtual.columns.length + 1) + delta) / (trackWidth / table.columnSize);
-							const offsetValue = Math.max(0, Math.min(table.columnSize - table.virtual.columns.length + 1, Math.floor(pos)));
+							const pos = (point.x - table.scrollbarWidth) / trackWidth;
+							const offsetValue =  Math.max(0, Math.min(table.columnSize - 1, Math.floor(pos * table.columnSize)));
 							if(offsetValue != table.offsetX){
 								if(table.dispatchEvent(new CanvasTableScrollEvent("table-beforescroll", {cancelable: true}, "scrollbarHorizontalThumb", this.element))){
 									table.offsetX = offsetValue;
@@ -603,10 +607,8 @@ class HTMLCanvasTableElement extends HTMLElement{
 						}
 						if(this.dragging == "vertical"){
 							const trackHeight = rects.scrollbarVerticalTrack.height - (table.hasHorizontalScrollbar ? table.scrollbarWidth : 0) - 2 * table.scrollbarWidth;
-							const thumbSize = rects.scrollbarVerticalThumb.height;
-							const delta = point.y - this.dragStart.y;
-							const pos = (this.dragStart.offset * trackHeight / (table.rowSize - table.virtual.rows.length + 1) + delta) / (trackHeight / table.rowSize);
-							const offsetValue = Math.max(0, Math.min(table.rowSize - table.virtual.rows.length + 1, Math.floor(pos)));
+							const pos = (point.y - table.scrollbarWidth) / trackHeight;
+							const offsetValue = Math.max(0, Math.min(table.rowSize - 1, Math.floor(pos * table.rowSize)));
 							if(offsetValue != table.offsetY){
 								if(table.dispatchEvent(new CanvasTableScrollEvent("table-beforescroll", {cancelable: true}, "scrollbarVerticalThumb", this.element))){
 									table.offsetY = offsetValue;
@@ -618,7 +620,6 @@ class HTMLCanvasTableElement extends HTMLElement{
 						}
 					}else if(e.type == "dragend"){
 						this.dragging = null;
-						this.dragStart = null;
 					}else if(e.type == "wheel"){
 						const table = this.pddv15sppk.table;
 						if(e.shiftKey){
@@ -700,7 +701,6 @@ class HTMLCanvasTableElement extends HTMLElement{
 			element: this,
 			current: null,
 			dragging: null,
-			dragStart: null,
 			dragImage: this.constructor.dragImage,
 			types: ["click", "dblclick", "mouseup", "mousedown", "mousemove", "mouseover", "mouseout", "wheel", "drag", "dragstart", "dragend", "dragenter", "dragover", "dragleave", "drop"]
 		};
