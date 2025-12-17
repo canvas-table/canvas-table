@@ -729,6 +729,9 @@ class HTMLCanvasTableElement extends HTMLElement{
 		this.pddv15sppk.table.dispatchEvent(new CanvasTableAttacheEvent("table-attache", this));
 		this.rerender(this.pdep6ph1vp.size);
 	}
+	get dataRect(){
+		return DOMRect.fromRect(this.pddv15sppk.rect);
+	}
 	rerender(size = null){
 		if((this.pdep6ph1vp.shadow != null) && this.pddv15sppk.table.dispatchEvent(new CanvasTableRenderEvent("table-beforerender", {cancelable: true}, this))){
 			this.draw(this.pdep6ph1vp.getContext(size));
