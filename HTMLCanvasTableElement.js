@@ -233,7 +233,8 @@ class CanvasTableRenderer{
 			textData: null,
 			wrappers: null,
 			borders: null,
-			rect: null
+			rect: null,
+			subRenderers: []
 		});
 	}
 	init(rect){
@@ -242,7 +243,8 @@ class CanvasTableRenderer{
 			textData: [],
 			wrappers: [],
 			borders: {},
-			rect: rect
+			rect: rect,
+			subRenderers: []
 		});
 		return this;
 	}
@@ -309,6 +311,9 @@ class CanvasTableRenderer{
 			}
 			renderMultilineText(ctx, renderTextData, rect, textDataObject.options);
 		}
+		for(let subRenderer of this.subRenderers){
+			subRenderer.render(object);
+		}
 		for(let wrapper of wrappers){
 			wrapper.call(table, object);
 		}
@@ -355,6 +360,46 @@ class CanvasTableRenderer{
 			ctx.stroke();
 		}
 		ctx.restore();
+	}
+	splitHorizontally(...widths){
+		const subRenderers = [];
+		const remainingRect = DOMRect.fromRect(this.rect);
+		for(let width of widths){
+			const subRenderer = new this.constructor();
+			const subRect = DOMRect.fromRect(this.rect);
+			subRect.x = remainingRect.x;
+			subRect.width = width;
+			remainingRect.x = subRect.right;
+			remainingRect.width -= width;
+			subRenderer.init(subRect);
+			subRenderers.push(subRenderer);
+			this.subRenderers.push(subRenderer);
+		}
+		const remainingRenderer = new this.constructor();
+		remainingRenderer.init(remainingRect);
+		subRenderers.push(remainingRenderer);
+		this.subRenderers.push(remainingRenderer);
+		return subRenderers;
+	}
+	splitVertically(...heights){
+		const subRenderers = [];
+		const remainingRect = DOMRect.fromRect(this.rect);
+		for(let height of heights){
+			const subRenderer = new this.constructor();
+			const subRect = DOMRect.fromRect(this.rect);
+			subRect.y = remainingRect.y;
+			subRect.height = height;
+			remainingRect.y = subRect.bottom;
+			remainingRect.height -= height;
+			subRenderer.init(subRect);
+			subRenderers.push(subRenderer);
+			this.subRenderers.push(subRenderer);
+		}
+		const remainingRenderer = new this.constructor();
+		remainingRenderer.init(remainingRect);
+		subRenderers.push(remainingRenderer);
+		this.subRenderers.push(remainingRenderer);
+		return subRenderers;
 	}
 	static measureMultilineText(ctx, text, color, font, textData = null){
 		ctx.save();
