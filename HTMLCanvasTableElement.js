@@ -320,6 +320,7 @@ class CanvasTableRenderer{
 		if((borders.left?.color != null) && (borders.left?.width != null)){
 			ctx.lineWidth = borders.left.width;
 			ctx.strokeStyle = borders.left.color;
+			ctx.beginPath();
 			ctx.moveTo(rect.left, rect.top);
 			ctx.lineTo(rect.left, rect.bottom);
 			ctx.stroke();
@@ -327,6 +328,7 @@ class CanvasTableRenderer{
 		if((borders.right?.color != null) && (borders.right?.width != null)){
 			ctx.lineWidth = borders.right.width;
 			ctx.strokeStyle = borders.right.color;
+			ctx.beginPath();
 			ctx.moveTo(rect.right, rect.top);
 			ctx.lineTo(rect.right, rect.bottom);
 			ctx.stroke();
@@ -334,6 +336,7 @@ class CanvasTableRenderer{
 		if((borders.top?.color != null) && (borders.top?.width != null)){
 			ctx.lineWidth = borders.top.width;
 			ctx.strokeStyle = borders.top.color;
+			ctx.beginPath();
 			ctx.moveTo(rect.left, rect.top);
 			ctx.lineTo(rect.right, rect.top);
 			ctx.stroke();
@@ -341,6 +344,7 @@ class CanvasTableRenderer{
 		if((borders.bottom?.color != null) && (borders.bottom?.width != null)){
 			ctx.lineWidth = borders.bottom.width;
 			ctx.strokeStyle = borders.bottom.color;
+			ctx.beginPath();
 			ctx.moveTo(rect.left, rect.bottom);
 			ctx.lineTo(rect.right, rect.bottom);
 			ctx.stroke();
@@ -348,6 +352,7 @@ class CanvasTableRenderer{
 		if((borders.up?.color != null) && (borders.up?.width != null)){
 			ctx.lineWidth = borders.up.width;
 			ctx.strokeStyle = borders.up.color;
+			ctx.beginPath();
 			ctx.moveTo(rect.left, rect.bottom);
 			ctx.lineTo(rect.right, rect.top);
 			ctx.stroke();
@@ -355,6 +360,7 @@ class CanvasTableRenderer{
 		if((borders.down?.color != null) && (borders.down?.width != null)){
 			ctx.lineWidth = borders.down.width;
 			ctx.strokeStyle = borders.down.color;
+			ctx.beginPath();
 			ctx.moveTo(rect.left, rect.top);
 			ctx.lineTo(rect.right, rect.bottom);
 			ctx.stroke();
