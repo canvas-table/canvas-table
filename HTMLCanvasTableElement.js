@@ -505,15 +505,15 @@ class HTMLCanvasTableElement extends HTMLElement{
 			ctx: null,
 			size: null,
 			getContext(size){
-				if(size == null){
+				if((size == null) || ((this.ctx != null) && ((size.inlineSize == 0) || (size.blockSize == 0)))){
 					return this.ctx;
 				}
 				const pddv15sppk = this.element.pddv15sppk;
 				const table = pddv15sppk.table;
 				const canvas = this.ctx.canvas;
 				const canvasSize = {
-					width: size.inlineSize,
-					height: size.blockSize
+					width: Math.max(1, size.inlineSize),
+					height: Math.max(1, size.blockSize)
 				};
 				const dx = table.hasRow ? table.getWidth(null) : 0;
 				const dy = table.hasColumn ? table.getHeight(null) : 0;
@@ -521,7 +521,11 @@ class HTMLCanvasTableElement extends HTMLElement{
 				const dvw = table.hasVerticalScrollbar ? table.scrollbarWidth : 0;
 				this.size = size;
 				this.ctx = Object.assign(canvas, canvasSize).getContext("2d");
-				pddv15sppk.matrix.setMatrixValue(`scale(${canvas.width / canvas.clientWidth},${canvas.height / canvas.clientHeight})`);
+				if((canvas.clientWidth <= 0) || (canvas.clientWidth <= 0)){
+					pddv15sppk.matrix.setMatrixValue("scale(1, 1)");
+				}else{
+					pddv15sppk.matrix.setMatrixValue(`scale(${canvas.width / canvas.clientWidth},${canvas.height / canvas.clientHeight})`);
+				}
 				pddv15sppk.ctx = Object.assign(pddv15sppk.ctx.canvas, canvasSize).getContext("2d");
 				Object.assign(pddv15sppk.rect, {
 					x: dx,
